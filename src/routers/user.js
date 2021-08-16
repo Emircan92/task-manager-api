@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const User = require('../models/user');
 const auth = require('../middleware/auth');
 const router = new express.Router();
@@ -79,6 +80,24 @@ router.delete('/users/me', auth, async (req, res) => {
     } catch (e) {
         res.status(500).send();
     }
+})
+
+const upload = multer({
+    dest: 'avatars',
+    limits: {
+        fileSize: 1000000
+    },
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+            return cb(new Error('Please update an image of jpeg/jpg/png extension.'))
+        }
+
+        cb(undefined, true);
+    }
+})
+
+router.post('/users/me/avatar', upload.single('avatar'), async (req, res) => {
+    res.send();
 })
 
 module.exports = router;
