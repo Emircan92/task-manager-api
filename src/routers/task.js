@@ -1,6 +1,8 @@
 const express = require('express');
 const Task = require('../models/task');
 const auth = require('../middleware/auth');
+const multer = require('multer');
+const sharp = require('sharp');
 const router = express.Router();
 
 router.post('/tasks', auth, async (req, res) => {
@@ -105,6 +107,71 @@ router.delete('/tasks/:id', auth, async (req, res) => {
         res.send(task);
     } catch (e) {
         res.status(500).send();
+    }
+})
+
+const upload = multer({
+    // if dest is not provided, then the file is sent to handler inside req.file
+    // dest: 'avatars',
+    limits: {
+        fileSize: 1000000
+    },
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+            return cb(new Error('Please upload an image of jpeg/jpg/png extension.'))
+        }
+
+        cb(undefined, true);
+    }
+})
+
+router.post('/tasks/:id/image', auth, upload.single('image'), async (req, res) => {
+    try {
+        const task = await Task.findOne({ _id: req.params.id, owner: req.user._id })
+
+        if (!task) {
+            return res.status(404).send();
+        }
+
+        const buffer = await sharp(req.file.buffer).resize({ width: 500, height: 500 }).png().toBuffer();
+        
+        task.image = buffer;
+        await task.save();
+        
+        res.send(task);
+    } catch (e) {
+        res.status(500).send();
+    }
+}, (error, req, res, next) => {
+    res.status(400).send({ error: error.message })
+})
+
+router.delete('/tasks/:id/image', auth, async (req, res) => {
+    try {
+        const task = await Task.findOne({ _id: req.params.id, owner: req.user._id });
+        if (!task) {
+            return res.status(404).send();
+        }
+
+        task.image = undefined;
+        await task.save();
+        res.send();
+    } catch (e) {
+        res.status(500).send();
+    }
+})
+
+router.get('/tasks/:id/image', auth, async (req, res) => {
+    try {
+        const task = await Task.findOne({ _id: req.params.id, owner: req.user._id })
+        if (!task || !task.image) {
+            throw new Error();
+        }
+
+        res.set('Content-Type', 'image/png')
+        res.send(task.image);
+    } catch (e) {
+        res.status(404).send();
     }
 })
 
