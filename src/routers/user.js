@@ -102,13 +102,27 @@ const upload = multer({
 })
 
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
-    const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250 }).png().toBuffer();
-    
-    req.user.avatar = buffer;
-    await req.user.save();
-    res.send();
+    try{
+        const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250 }).png().toBuffer();
+        
+        req.user.avatar = buffer;
+        await req.user.save();
+        res.send();
+    } catch (e) {
+        res.status(500).send()
+    }
 }, (error, req, res, next) => {
     res.status(400).send({ error: error.message })
+})
+
+router.get('users/me/avatar', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        res.set('Content-Type', 'image/png')
+        res.send(user.avatar);
+    } catch (e) {
+        res.status(404).send(e);
+    }
 })
 
 router.delete('/users/me/avatar', auth, async (req, res) => {
