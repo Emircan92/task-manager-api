@@ -11,7 +11,7 @@ router.post('/users', async (req, res) => {
 
     try {
         await user.save();
-        sendWelcomeEmail(user.email, user.name);
+        // sendWelcomeEmail(user.email, user.name);
         const token = await user.generateAuthToken();
         res.status(201).send({ user, token });
     } catch (e) {
@@ -116,12 +116,16 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
 })
 
 router.get('users/me/avatar', auth, async (req, res) => {
+    console.log('eimr');
     try {
+        console.log('geldim');
         const user = await User.findById(req.user.id);
+        console.log(user);
         res.set('Content-Type', 'image/png')
         res.send(user.avatar);
     } catch (e) {
         res.status(404).send(e);
+        console.log('hata');
     }
 })
 
